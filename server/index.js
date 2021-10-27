@@ -1,17 +1,17 @@
 // Title: Routing management
 // Author: Darshan Shah - 1910463
-// Info: This script manages below the routes for 1announce project:
+// Info: This script manages below routes for 1announce project:
 //      1. '/' - main route
-//      1. '/slackAuth' - For authorizing slack account and storing user info
-//      1. '/sendMsg' - For posting announcement to the slack channel
-//      1. '/signup' - For fetching user id (email)
+//      2. '/slackAuth' - For authorizing slack account and storing user info
+//      3. '/sendMsg' - For posting announcement to the slack channel
+//      4. '/signup' - For fetching user id (email)
 
 
 
 import express from 'express';
 import {spawn} from 'child_process';
 import NodeCache from "node-cache";
-import user from './connect.js';
+import User from './connect.js';
 import fetch from "node-fetch";
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'url';
@@ -48,17 +48,17 @@ app.post('/signup',(req,res) => {
     res.sendFile(__dirname+'/helper/index.html')
 });
 
-app.get('/slackAuth', (req, res, next) => {
+    app.get('/slackAuth', (req, res) => {
 
     // Slack Auth code
-    const code_slack = req.query.code;
+    const codeSlack = req.query.code;
 
     // Using py script to fetch auth token and channel name
-    const python = spawn('python', [__dirname+'/helper/testing.py', code_slack]);
-    python.stdout.on('data', (data) => {
+    const pythonScript = spawn('python', [__dirname+'/helper/testing.py', codeSlack]);
+    pythonScript.stdout.on('data', (data) => {
 
         try{
-            var user_data = {
+            var userData = {
                 access_token: JSON.parse(data.toString())['access_token'].toString(),
                 channel: JSON.parse(data.toString())['incoming_webhook']['channel'].toString()
             };
@@ -68,16 +68,16 @@ app.get('/slackAuth', (req, res, next) => {
         }
 
         // accessing email from cache
-        var email = myCache.get('email');
+        const email = myCache.get('email');
 
         // saving userinfo into db
-        var new_user = new user({
+        const newUser = new User({
             email:email,
-            user_data:user_data,
+            user_data:userData,
             slack: true
         });
 
-        new_user.save(function(err, data){
+        newUser.save(function(err, data){
             if(err){
                 console.log(err);
             }
@@ -101,13 +101,13 @@ app.post('/sendMsg',(req,res) => {
     const email = myCache.get('email');
 
     // mongoose query for searching item using email as a param
-    user.find({email:email}, function (err,data){
+    User.find({email:email}, function (err,data){
         if(err){
             console.log(err);
         }
         else {
             console.log(data);
-            const SLACK_BOT_TOKEN = data[0].user_data.access_token;
+            const slackBotToken = data[0].user_data.access_token;
             const channel = data[0].user_data.channel;
 
             const payload = {
@@ -130,7 +130,7 @@ app.post('/sendMsg',(req,res) => {
                 headers: {
                     "Content-Type": "application/json; charset=utf-8",
                     "Content-Length": payload.length,
-                    Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+                    Authorization: `Bearer ${slackBotToken}`,
                     Accept: "application/json",
                 },
             })
