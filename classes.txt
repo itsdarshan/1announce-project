@@ -1,0 +1,1 @@
+This is an end-to-end Functional Java Script based Full MERN Stack Application, we do not tend to use classes for this project, instead we build the whole structure based on Components functionally.
