@@ -8,7 +8,7 @@
     "start": "nodemon index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Darshan Shah (1910463)",
   "license": "ISC",
   "dependencies": {
     "child-process": "^1.0.2",

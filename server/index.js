@@ -1,3 +1,13 @@
+// Title: Routing management
+// Author: Darshan Shah - 1910463
+// Info: This script manages below the routes for 1announce project:
+//      1. '/' - main route
+//      1. '/slackAuth' - For authorizing slack account and storing user info
+//      1. '/sendMsg' - For posting announcement to the slack channel
+//      1. '/signup' - For fetching user id (email)
+
+
+
 import express from 'express';
 import {spawn} from 'child_process';
 import NodeCache from "node-cache";
@@ -7,22 +17,22 @@ import dotenv from 'dotenv'
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
+// declaring file and directing name for efficient access of files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 const myCache = new NodeCache();
+
+// configuring environment variables
 dotenv.config();
 
+// express routing
 app.use(express.urlencoded({
     extended: true
 }))
 
 app.get('/',(req,res) => {
-    // email will be fetched from request
-    // const email = 'test12@gmail.com';
-    // email is cached here
-    // myCache.set("email", email);
     // sending main UI component
     res.sendFile(__dirname+'/helper/signup.html')
 });
@@ -38,8 +48,6 @@ app.post('/signup',(req,res) => {
     res.sendFile(__dirname+'/helper/index.html')
 });
 
-
-
 app.get('/slackAuth', (req, res, next) => {
 
     // Slack Auth code
@@ -48,12 +56,6 @@ app.get('/slackAuth', (req, res, next) => {
     // Using py script to fetch auth token and channel name
     const python = spawn('python', [__dirname+'/helper/testing.py', code_slack]);
     python.stdout.on('data', (data) => {
-
-        // fetching access token
-        // console.log(JSON.parse(data.toString())['access_token'].toString())
-
-        // fetching channel
-        // console.log(JSON.parse(data.toString())['incoming_webhook']['channel'].toString())
 
         try{
             var user_data = {
@@ -64,7 +66,6 @@ app.get('/slackAuth', (req, res, next) => {
         catch (err){
             console.log(err);
         }
-
 
         // accessing email from cache
         var email = myCache.get('email');
@@ -91,12 +92,15 @@ app.get('/slackAuth', (req, res, next) => {
 
 });
 
-
 app.post('/sendMsg',(req,res) => {
 
+    // fetching posting message
     const msg = req.body.msg;
+
+    // retrieving email from cache
     const email = myCache.get('email');
 
+    // mongoose query for searching item using email as a param
     user.find({email:email}, function (err,data){
         if(err){
             console.log(err);
@@ -107,24 +111,25 @@ app.post('/sendMsg',(req,res) => {
             const channel = data[0].user_data.channel;
 
             const payload = {
-                // fetch channel name from DynamoDB
+                // fetch channel name from mongodb
                 channel: channel,
                 attachments: [
                     {
-                        title: "My first Slack Message",
+                        title: "This is a testing of 1announce",
                         text: msg,
-                        author_name: "alejandrogonzalez3",
-                        color: "#00FF00",
+                        author_name: "Darshan Shah",
+                        color: "#e9114e",
                     },
                 ],
             };
 
+            // post request to send message to slack
             fetch("https://slack.com/api/chat.postMessage", {
                 method: "POST",
                 body: JSON.stringify(payload),
                 headers: {
                     "Content-Type": "application/json; charset=utf-8",
-                    // "Content-Length": payload.length,
+                    "Content-Length": payload.length,
                     Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
                     Accept: "application/json",
                 },
